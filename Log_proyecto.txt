@@ -1,0 +1,60 @@
+*** PENDIENTES ***
+
+*Notebooks:
+|ETL
+	|EDA_DGT:
+	- Por ahora aparcado todo el tema del mergeo con el parque móvil
+	|Scrapeo_Km77:
+	-Hacer un Scrapeo mas completo de los modelos principales
+	-Eliminar columna características y crear un DF mucho más completo por submodelo
+		--> CARACTERÍSTICAS
+			-Nombre submodelo [0]
+			-Precio[0]
+
+			-Vmax[1]
+			-0-100[1]
+			-Consumo[1]
+			-Emisiones C02[1]
+			-Normativa emisiones[1]
+			-Distintivo DGT[1]
+
+			-Tipo carrocería[2]
+			-N puertas[2]
+			-Long[2]	
+			-Anchura
+			-Altura
+			-Batalla
+			-Cx
+			-Peso
+			-Deposito
+			-FAP
+			-Volumen maletero
+			-Plazas
+
+			-Potencia[4]
+			-Par
+			-Cilindrada
+			-Combustible
+			-Start/stop
+
+			-Caja cambios[5]
+			-Velocidades
+
+			-Tipo tracción[7]
+			-Stop/start
+			-Neumáticos
+
+	-Normalizar la base de datos
+	-Revisar qué pasa con los electrificados (Aunque alomejor se va a tomar por culo con las características)
+	|Extracción_asincrona:
+	- Una vez hecha la ETL, asincronizar todo.
+|
+|Modelización
+	|App.py:
+	- Hacer un agente para que el bot tenga memoria
+	|Modelo_cluster:
+	- Crear una clusterización con sentido (Principalmente por precio)
+	- Crear un modelo predictivo que permita elegir qué coche es el más adecuado según tu petición
+	- Insertar gráficas por modelo y foto extra 
+|- *  
+ 

@@ -1,0 +1,90 @@
+#Librerías para subirlo a SQL
+sys.path.append("../../")
+import sys
+from src import soporte_sql as s_sql
+
+#Librerías de escrapeo
+import requests
+from bs4 import BeautifulSoup
+from time import sleep
+
+#Librerías de limpieza 
+import pandas as pd
+import numpy as np
+import re
+
+
+def escrapear_y_subir_link_modelo():
+    ##Km77 comenzó sus reviews con coches a partir de 1999, por lo que limitamos la búsqueda al número máximo de páginas.
+    conn = s_sql.crear_conexion()
+
+    cur = conn.cursor()
+    url_busqueda = "https://www.km77.com/buscador/informaciones?grouped=0&order=date-desc&markets[]=current&markets[]=discontinued"
+    res_busqueda = requests.get(url_busqueda)
+    sopa_busqueda = BeautifulSoup(res_busqueda.text,"html.parser")
+    pags_totales = sopa_busqueda.find("div", class_="d-inline font-weight-normal font-size-2xl").text.strip()
+    total_resultados = int(re.findall(r"\d+",pags_totales)[0])
+
+    for numero_pagina in range(1,(total_resultados//20)+1):
+            sleep(5)
+            url_review = f"https://www.km77.com/buscador/informaciones?grouped=0&order=date-desc&markets[]=current&markets[]=discontinued&page={numero_pagina}"
+            res_review = requests.get(url_review)
+            print(res_review)
+
+            sopa_review = BeautifulSoup(res_review.content, "html.parser")
+            titulo = sopa_review.find("div", class_="d-inline font-weight-normal font-size-2xl")
+            if titulo.text != '(0 resultados)':
+
+                    if res_review.status_code == 200:
+                            print(f"Página {numero_pagina} captada correctamente")
+                            
+                            links = [link["href"] for link in sopa_review.findAll("a", class_="font-size-sm", href=True)]
+                            links = set(links)
+
+                            for enlace in (links):
+                                    dic_coche = {}
+                                    if len(enlace.split("/")) == 7:
+                                                    dic_coche = [{
+                                                    "marca": enlace.split("/")[2],
+                                                    "modelo": enlace.split("/")[3],
+                                                    "anio": enlace.split("/")[4],
+                                                    "tipo_carroceria": enlace.split("/")[5],
+                                                    "link": enlace
+                                                    }]
+                                    elif len(enlace.split("/")) == 8:
+
+                                                    dic_coche = [{
+                                                    "marca": enlace.split("/")[2],
+                                                    "modelo": (enlace.split("/")[3] + " " + enlace.split("/")[6]),
+                                                    "anio": enlace.split("/")[4],
+                                                    "tipo_carroceria": enlace.split("/")[5],
+                                                    "link": enlace
+                                                    }]
+                                    
+                                    df = pd.DataFrame(dic_coche)
+
+                                    for row in df.itertuples(index=False):
+                                            cur.execute("""
+                                            INSERT INTO modelos (marca, modelo, anio, tipo_carroceria, link)
+                                            VALUES (%s, %s, %s, %s, %s)
+                                            ON CONFLICT (marca, modelo, anio)
+                                            DO UPDATE SET
+                                            tipo_carroceria = EXCLUDED.tipo_carroceria,
+                                            link = EXCLUDED.link;
+                                    """, (row.marca, row.modelo, row.anio, row.tipo_carroceria, row.link))
+                                            conn.commit()
+                                            print(f"Fila {df[['modelo']]} insertada correctamente")
+                                            sleep(1)
+                                    
+                                                    
+                                    
+                    else:
+                            print(f"ERROR en la página {numero_pagina}")
+                            pass
+
+            else:             
+                    print("Sin resultados")   
+                    cur.close()
+                    conn.close()
+                    break
+            
